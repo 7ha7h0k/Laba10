@@ -10,6 +10,10 @@ on:      # Запускается при push и pull request файлов .cs �
     paths:
       - '**.cs'
 
+permissions:
+  contents: read
+  checks: write # нужно для публикации отчета dorny/test-reporter
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest # ОС виртуальной машины
@@ -29,5 +33,13 @@ jobs:
     - name: Build solution # Построение решения
       run: dotnet build --no-restore --configuration Release
 
-    - name: Run tests # Запуск тестов
-      run: dotnet test --no-build --configuration Release --verbosity normal
+    - name: Run tests and generate TRX log # Запуск тестов
+      run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test_results.trx"
+
+    - name: Test Report # Сохранение отчета
+      uses: dorny/test-reporter@v2
+      if: success() || failure() # запускает этот шаг в любом случае
+      with:
+        name: Test results
+        path: "**/*.trx" # Путь сохранения результатов теста
+        reporter: dotnet-trx # Формат результата
